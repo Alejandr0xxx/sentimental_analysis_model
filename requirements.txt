@@ -1,0 +1,8 @@
+requests
+pandas
+numpy
+matplotlib
+scikit-learn
+tqdm
+nltk
+spacy # Luego de instalar las librerías ejecutar el comando "python -m spicy download en_core_web_sm"
