@@ -16,3 +16,4 @@ CODIFIED_DF_PATH = path_concat(DATASETS_FOLDER_PATH, 'codified_df.csv')
 
 # Ruta del dataframe final del procesamiento con procesado
 PROCESSED_DF_PATH = path_concat(DATASETS_FOLDER_PATH, 'processed_df.csv')
+
