@@ -20,7 +20,7 @@ lemmatizer = spacy.load('en_core_web_sm')
     # Guardo las stopwords en un set
 stop_words = set(stopwords.words('english'))
 
-def limpiar_texto(text):
+def clean_text(text):
     
     """
     Recibe un texto y lo procesa (Minúsculas, eliminación de caracteres innecesarios y doles espacios, eliminación de stopwords y lematización.)
@@ -258,3 +258,31 @@ def model_exists(model_name, model_type):
     
     # Devolvemos un booleano que indique su existencia
     return isExisting
+
+
+# Función para testear los modelos con reviews propias
+def test_model(samples_by_label, model, codifier, label_names):
+    """
+        Recibe un diccionario en el cual iterara sobre cada llave para predecir la clase de cada una de las reviews que contiene
+    Args:
+        samples_by_label (dict): Diccionario (Label: [Reviews])
+        model (model): _description_
+        codifier (sklearn.feature_extraction.text.TfidfVectorizer): Codificador
+        label_names (list): Lista las categorías en orden 
+    """
+    print(f'{"Valor real":<20}{"Valor predicho":>20}')
+    # Iteramos sobre el diccionario
+    for real_label, reviews in samples_by_label.items():
+        # Ahora iteramos en la lista de reviews
+        for review in reviews:
+            # Entadarizamos la review
+            cleaned = clean_text(review)
+            
+            # Codificamos la review
+            vectorized = codifier.transform([cleaned])
+            
+            # Usamos el modelo para predecir en función de la review codificada
+            pred = model.predict(vectorized)[0]
+            
+            # Mostramos una comparación entre la clase real y la predicha
+            print(f'{real_label:<20}{label_names[pred]:>20}')
