@@ -105,41 +105,45 @@ def topn_most_similar_plot(word, model, topn=10, ndim=2):
     if ndim not in range(2,4):
         return print('Ingresa una dimensión validad (2 o 3)')
     
-    try:
-        # Buscamos las top-n palabras más similares
-        similar_words = model.wv.most_similar(word.strip().lower(), topn=topn)
+    # Verificamos que la palabra se encuentre en nuestro vocabulario, sino devolvemos una advertencia
+    if word.strip().lower() not in model.wv.key_to_index:
+        print(f'La palabra "{word}" no se encuentra en el vocabulario.')
+        return
         
-        # Creamos un array en el que almacenaremos el embedding de cada palabra
-        similar_vecs = np.array([model.wv[word] for word, _ in similar_words])
+    # Buscamos las top-n palabras más similares
+    similar_words = model.wv.most_similar(word.strip().lower(), topn=min(topn, len(model.wv) - 1))
         
-        # A esos embeddings agregamos el embedding de la palabra de referencia
-        similar_vecs = np.append([model.wv[word]], similar_vecs, axis=0)
-        
-        # Aplicamos una técnica de reducción de dimensionalidad en este caso TNSE 
-        tnse = TSNE(n_components=ndim, perplexity=5, random_state=42).fit_transform(similar_vecs)
-        
-        # Tomamos las palabras
-        words = [word for word, _ in similar_words] + [word]
-        
-        # Graficamos
-        fig = plt.figure(figsize=(7, 5))
-        
-        plt.title(f'Top {topn} palabras más similares a "{word}" ({ndim}D)')
-        plt.grid(True)
-        projection = "3d" if ndim == 3 else None
-        ax = fig.add_subplot(111, projection=projection)
-        for vec, word in zip(tnse, words):
-            if ndim == 2:
-                x, y = vec
-                ax.scatter(x, y)
-                ax.text(x - 5, y + 2, word)
-            else:
-                x, y, z = vec
-                ax.scatter(x, y, z)
-                ax.text(x - 5, y + 2, z + 3, word)
-        plt.show()
-    except KeyError:
-        print(f'La palabra {word} no se encuentra dentro del vocabulario')
+    # Creamos un array en el que almacenaremos el embedding de cada palabra
+    similar_vecs = np.array([model.wv[word] for word, _ in similar_words])
+    
+    # A esos embeddings agregamos el embedding de la palabra de referencia
+    similar_vecs = np.vstack([model.wv[word], similar_vecs])
+    
+    # Aplicamos una técnica de reducción de dimensionalidad en este caso TNSE 
+    tnse = TSNE(n_components=ndim, perplexity=5, random_state=42).fit_transform(similar_vecs)
+    
+    # Tomamos las palabras
+    words = [word for word, _ in similar_words] + [word]
+    
+    # Graficamos
+    fig = plt.figure(figsize=(7, 5))
+    
+    plt.title(f'Top {topn} palabras más similares a "{word}" ({ndim}D)')
+    plt.grid(True)
+    projection = "3d" if ndim == 3 else None
+    ax = fig.add_subplot(111, projection=projection)
+    for vec, word in zip(tnse, words):
+        if ndim == 2:
+            x, y = vec
+            ax.scatter(x, y)
+            ax.text(x - 5, y + 2, word)
+        else:
+            x, y, z = vec
+            ax.scatter(x, y, z)
+            ax.text(x - 5, y + 2, z + 3, word)
+    plt.tight_layout()
+    plt.show()
+
 
 ################################ Funciones para modelos ################################
 # Ruta para el almacenamiento de modelos 
@@ -260,8 +264,8 @@ def model_exists(model_name, model_type):
     return isExisting
 
 
-# Función para testear los modelos con reviews propias
-def test_model(samples_by_label, model, codifier, label_names):
+# Función para testear los modelos con diccionarios reviews propias
+def test_model_dict(samples_by_label, model, codifier, label_names):
     """
         Recibe un diccionario en el cual iterara sobre cada llave para predecir la clase de cada una de las reviews que contiene
     Args:
@@ -286,3 +290,27 @@ def test_model(samples_by_label, model, codifier, label_names):
             
             # Mostramos una comparación entre la clase real y la predicha
             print(f'{real_label:<20}{label_names[pred]:>20}')
+
+# Función para testear los modelos con UNA review propia
+
+def test_model(review, model, codifier, label_names):
+    """
+        Recibe un diccionario en el cual iterara sobre cada llave para predecir la clase de cada una de las reviews que contiene
+    Args:
+        samples_by_label (dict): Diccionario (Label: [Reviews])
+        model (model): _description_
+        codifier (sklearn.feature_extraction.text.TfidfVectorizer): Codificador
+        label_names (list): Lista las categorías en orden 
+    """
+
+    cleaned = clean_text(review)
+            
+    # Codificamos la review
+    vectorized = codifier.transform([cleaned])
+            
+    # Usamos el modelo para predecir en función de la review codificada
+    pred = model.predict(vectorized)[0]
+            
+    # Mostramos una comparación entre la clase real y la predicha
+    return label_names[pred]
+
